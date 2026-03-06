@@ -12,6 +12,10 @@ You must have admin access to an organization to use this resource.
 
 When immutable releases are enforced, release assets and metadata cannot be modified or deleted after publication.
 
+~> **Note:** This is a singleton resource — only one instance should exist per organization. Managing this resource from multiple Terraform states will cause policy flapping.
+
+~> **Warning:** Destroying this resource will set the immutable releases policy to `none`, disabling supply chain security protections for all repositories in the organization.
+
 ## Example Usage
 
 ### Enforce immutable releases for all repositories
@@ -48,7 +52,7 @@ resource "github_organization_immutable_releases" "example" {
 The following arguments are supported:
 
 * `enforced_repositories` - (Required) The policy that controls which repositories in the organization have immutable releases enforced. Can be one of: `all`, `none`, or `selected`.
-* `selected_repository_ids` - (Optional) An array of repository IDs for which immutable releases enforcement should be applied. Only valid when `enforced_repositories` = `selected`.
+* `selected_repository_ids` - (Optional) An array of repository IDs for which immutable releases enforcement should be applied. Only valid when `enforced_repositories` is set to `selected`.
 
 ## Import
 

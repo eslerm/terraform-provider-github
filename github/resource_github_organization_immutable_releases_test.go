@@ -1,11 +1,13 @@
 package github
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/acctest"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 func TestAccGithubOrganizationImmutableReleases(t *testing.T) {
@@ -25,6 +27,7 @@ func TestAccGithubOrganizationImmutableReleases(t *testing.T) {
 		resource.Test(t, resource.TestCase{
 			PreCheck:          func() { skipUnlessHasOrgs(t) },
 			ProviderFactories: providerFactories,
+			CheckDestroy:      testAccCheckGithubOrganizationImmutableReleasesDestroy,
 			Steps: []resource.TestStep{
 				{
 					Config: config,
@@ -50,6 +53,7 @@ func TestAccGithubOrganizationImmutableReleases(t *testing.T) {
 		resource.Test(t, resource.TestCase{
 			PreCheck:          func() { skipUnlessHasOrgs(t) },
 			ProviderFactories: providerFactories,
+			CheckDestroy:      testAccCheckGithubOrganizationImmutableReleasesDestroy,
 			Steps: []resource.TestStep{
 				{
 					Config: config,
@@ -88,6 +92,7 @@ func TestAccGithubOrganizationImmutableReleases(t *testing.T) {
 		resource.Test(t, resource.TestCase{
 			PreCheck:          func() { skipUnlessHasOrgs(t) },
 			ProviderFactories: providerFactories,
+			CheckDestroy:      testAccCheckGithubOrganizationImmutableReleasesDestroy,
 			Steps: []resource.TestStep{
 				{
 					Config: config,
@@ -113,6 +118,7 @@ func TestAccGithubOrganizationImmutableReleases(t *testing.T) {
 		resource.Test(t, resource.TestCase{
 			PreCheck:          func() { skipUnlessHasOrgs(t) },
 			ProviderFactories: providerFactories,
+			CheckDestroy:      testAccCheckGithubOrganizationImmutableReleasesDestroy,
 			Steps: []resource.TestStep{
 				{
 					Config: config,
@@ -168,6 +174,7 @@ func TestAccGithubOrganizationImmutableReleases(t *testing.T) {
 		resource.Test(t, resource.TestCase{
 			PreCheck:          func() { skipUnlessHasOrgs(t) },
 			ProviderFactories: providerFactories,
+			CheckDestroy:      testAccCheckGithubOrganizationImmutableReleasesDestroy,
 			Steps: []resource.TestStep{
 				{
 					Config: configAll,
@@ -180,4 +187,32 @@ func TestAccGithubOrganizationImmutableReleases(t *testing.T) {
 			},
 		})
 	})
+}
+
+func testAccCheckGithubOrganizationImmutableReleasesDestroy(s *terraform.State) error {
+	meta, err := getTestMeta()
+	if err != nil {
+		return err
+	}
+	conn := meta.v3client
+	orgName := meta.name
+
+	for _, rs := range s.RootModule().Resources {
+		if rs.Type != "github_organization_immutable_releases" {
+			continue
+		}
+
+		settings, resp, err := conn.Organizations.GetImmutableReleasesSettings(context.Background(), orgName)
+		if err != nil {
+			if resp != nil && resp.StatusCode == 404 {
+				continue
+			}
+			return err
+		}
+		if settings.GetEnforcedRepositories() != "none" {
+			return fmt.Errorf("immutable releases still enforced for organization %s: %s", orgName, settings.GetEnforcedRepositories())
+		}
+	}
+
+	return nil
 }
